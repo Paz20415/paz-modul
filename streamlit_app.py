@@ -1033,19 +1033,18 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
 
     scale_info = {"used_scale": used_scale, "source": scale_src}
 
-    # ── Pre-compute mamad walls once — used by checks 1, 2 and 3 ─────────────
+# --- Pre-compute mamad walls and dimensions ---
     _mamad_anchor = ee.find_mamad_room_bbox(
         pdf_bytes, word_coords=corpus.get("word_coords"), scale=used_scale)
-  if used_scale:
+    
+    if used_scale:
         # 1. מדידת קירות עם עיגול הנדסי (Snapping)
         _raw_walls = ee.measure_mamad_walls(pdf_bytes, used_scale, mamad_bbox=_mamad_anchor)
-        # כל מדידה בין 20 ל-35 הופכת ל-30 ס"מ (פנימי), בין 36 ל-48 הופכת ל-40 ס"מ (חיצוני)
         _inner_walls = [30 for w in _raw_walls if 20 <= w <= 35]
         _outer_walls = [40 for w in _raw_walls if 36 <= w <= 48]
         _mamad_walls = _inner_walls + _outer_walls
 
-        # 2. חישוב מידות (תקנה 2.2) - שימוש במלבן המעודכן מהסליידרים
-        # שים לב: המשתנים _ow_m ו-_oh_m חייבים להתאים לקוד התצוגה למטה
+        # 2. חישוב מידות (תקנה 2.2) מסונכרן עם הסליידרים
         _adj_bb = _get_adjusted_mamad_bbox(_mamad_anchor, _bbox_adj_l, _bbox_adj_r, _bbox_adj_t, _bbox_adj_b)
         _ow_m = ee.pts_to_real_cm(_adj_bb[2] - _adj_bb[0], used_scale) / 100.0
         _oh_m = ee.pts_to_real_cm(_adj_bb[3] - _adj_bb[1], used_scale) / 100.0
@@ -1056,7 +1055,6 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
         _mamad_walls = _inner_walls = _outer_walls = []
         _ow_m = _oh_m = 0
         _is_dim_ok = False
-
     # ── 1. Wall Thickness — Inner (תקנה 2.3א ≥ 30 cm) ───────────────────────
     # Single combined pattern is faster than 4 separate scans
     inner_pat = (
