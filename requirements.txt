@@ -4,3 +4,4 @@ Pillow
 pandas
 fpdf2
 numpy
+streamlit-image-coordinates
