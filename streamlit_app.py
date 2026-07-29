@@ -1036,7 +1036,7 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
     # ── Pre-compute mamad walls once — used by checks 1, 2 and 3 ─────────────
     _mamad_anchor = ee.find_mamad_room_bbox(
         pdf_bytes, word_coords=corpus.get("word_coords"), scale=used_scale)
- if used_scale:
+    if used_scale:
         # 1. מדידת קירות עם עיגול הנדסי (מנקה את הפאשלות של ה-22 ס"מ)
         _raw_walls = ee.measure_mamad_walls(pdf_bytes, used_scale, mamad_bbox=_mamad_anchor)
         _mamad_walls = []
