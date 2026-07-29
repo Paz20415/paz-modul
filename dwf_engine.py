@@ -2,24 +2,28 @@ import zipfile
 import io
 from PIL import Image
 
+def is_dwf_file(filename):
+    """בודק אם הקובץ הוא מסוג DWF או DWFX"""
+    if not filename:
+        return False
+    return filename.lower().endswith(('.dwf', '.dwfx'))
+
 def data_to_img(data):
-    """
-    מנוע חילוץ תמונה מ-DWF/DWFX (גרסה יציבה 2.0)
-    """
+    """מחלץ תמונה מתוך קובץ DWF/DWFX"""
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as z:
             all_files = z.namelist()
             
-            # חיפוש תמונות שרטוט (PNG/JPG) בתוך הקובץ
+            # חיפוש תמונות שרטוט
             img_files = [f for f in all_files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.preview'))]
             
             if img_files:
-                # לוקח את קובץ התמונה הכי גדול (בדרך כלל השרטוט הראשי)
+                # לוקח את הקובץ הכי גדול
                 best_file = max(img_files, key=lambda f: z.getinfo(f).file_size)
                 with z.open(best_file) as f:
                     return Image.open(io.BytesIO(f.read())), None
             
-            # בדיקה נוספת עבור קבצי DWFX (מבנה XPS)
+            # תמיכה ב-DWFX (XPS)
             res_files = [f for f in all_files if 'resources' in f.lower() and f.lower().endswith('.png')]
             if res_files:
                 best_res = max(res_files, key=lambda f: z.getinfo(f).file_size)
@@ -30,6 +34,6 @@ def data_to_img(data):
     except Exception as e:
         return None, f"שגיאה טכנית בפתיחת הקובץ: {str(e)}"
 
-# פונקציית תאימות לקוד הראשי
+# פונקציית תאימות נוספת
 def process_dwf(data):
     return data_to_img(data)
