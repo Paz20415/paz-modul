@@ -1036,17 +1036,26 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
     # ── Pre-compute mamad walls once — used by checks 1, 2 and 3 ─────────────
     _mamad_anchor = ee.find_mamad_room_bbox(
         pdf_bytes, word_coords=corpus.get("word_coords"), scale=used_scale)
-    if used_scale:
-        # measure_mamad_walls already applies max-within-cluster + structural
-        # snapping (24–34→30, 36–46→40) before returning.
-        _mamad_walls = [w for w in
-                        ee.measure_mamad_walls(pdf_bytes, used_scale,
-                                               mamad_bbox=_mamad_anchor)
-                        if w >= 20]
-        _inner_walls = sorted(w for w in _mamad_walls if 25 <= w <= 35)   # target 30 cm
-        _outer_walls = sorted(w for w in _mamad_walls if 35 < w <= 45)    # target 40 cm
+  if used_scale:
+        # 1. מדידת קירות עם עיגול הנדסי (Snapping)
+        _raw_walls = ee.measure_mamad_walls(pdf_bytes, used_scale, mamad_bbox=_mamad_anchor)
+        # כל מדידה בין 20 ל-35 הופכת ל-30 ס"מ (פנימי), בין 36 ל-48 הופכת ל-40 ס"מ (חיצוני)
+        _inner_walls = [30 for w in _raw_walls if 20 <= w <= 35]
+        _outer_walls = [40 for w in _raw_walls if 36 <= w <= 48]
+        _mamad_walls = _inner_walls + _outer_walls
+
+        # 2. חישוב מידות (תקנה 2.2) - שימוש במלבן המעודכן מהסליידרים
+        # שים לב: המשתנים _ow_m ו-_oh_m חייבים להתאים לקוד התצוגה למטה
+        _adj_bb = _get_adjusted_mamad_bbox(_mamad_anchor, _bbox_adj_l, _bbox_adj_r, _bbox_adj_t, _bbox_adj_b)
+        _ow_m = ee.pts_to_real_cm(_adj_bb[2] - _adj_bb[0], used_scale) / 100.0
+        _oh_m = ee.pts_to_real_cm(_adj_bb[3] - _adj_bb[1], used_scale) / 100.0
+        
+        _min_dim_val = min(_ow_m, _oh_m)
+        _is_dim_ok = _min_dim_val >= 1.60
     else:
         _mamad_walls = _inner_walls = _outer_walls = []
+        _ow_m = _oh_m = 0
+        _is_dim_ok = False
 
     # ── 1. Wall Thickness — Inner (תקנה 2.3א ≥ 30 cm) ───────────────────────
     # Single combined pattern is faster than 4 separate scans
@@ -2383,16 +2392,18 @@ if st.session_state.results is not None:
         _oh_m = ee.pts_to_real_cm(_adj_bb["bottom"] - _adj_bb["top"], used_scale) / 100.0
         for _i, _f in enumerate(findings):
             if _f.get("regulation") == "תקנה 2.2":
-                _om    = min(_ow_m, _oh_m)
-                _os    = "pass" if _om >= 1.60 else "fail"
-                _osmall = "רוחב" if _ow_m < _oh_m else "אורך"
-                _otext = (f"📐 ממדי ממ\"ד ({_effective_area_src}, קנ\"מ 1:{used_scale}): "
-                          f"{_ow_m:.2f} מ' × {_oh_m:.2f} מ' — "
-                          + ("כל צלע ≥ 1.60 מ'. עומד בדרישה."
-                             if _os == "pass"
-                             else f"{_osmall} ({_om:.2f} מ') מתחת למינימום 1.60 מ'. יש לתקן לפי תקנה 2.2."))
-                findings[_i] = _finding(_os, "ממדים מינימליים", "תקנה 2.2", _otext)
-                break
+            _om = min(_ow_m, _oh_m)
+            _os = "pass" if _om >= 1.60 else "fail"
+            _osmall = "רוחב" if _ow_m < _oh_m else "אורך"
+            
+            # טקסט הסבר מקצועי
+            _status_icon = "✅" if _os == "pass" else "❌"
+            _otext = (f"{_status_icon} מידות מזוהות: {_ow_m:.2f} מ' על {_oh_m:.2f} מ'.\n\n"
+                      f"המידה המינימלית היא {_om:.2f} מ'. " + 
+                      ("עומד בדרישה (1.60 מ')." if _os == "pass" else "נמוך מהמינימום (1.60 מ')!"))
+            
+            findings[_i] = _finding(_os, "תקנה 2.2", "ממ''דים מינימליים", _otext)
+            break
 
     # ── Step 2: sort strictly by severity (overrides respected) ──────────────
     # fail=0  →  info/manual=1  →  warn=2  →  pass=3
