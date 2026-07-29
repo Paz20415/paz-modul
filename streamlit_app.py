@@ -38,7 +38,7 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 # Database helpers
 # ---------------------------------------------------------------------------
-DB_PATH = Path("/home/runner/workspace/users.db")
+DB_PATH = "users.db"
 
 def _get_conn() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
