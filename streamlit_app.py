@@ -1043,8 +1043,14 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
                         ee.measure_mamad_walls(pdf_bytes, used_scale,
                                                mamad_bbox=_mamad_anchor)
                         if w >= 20]
-        _inner_walls = sorted(w for w in _mamad_walls if 25 <= w <= 35)   # target 30 cm
-        _outer_walls = sorted(w for w in _mamad_walls if 35 < w <= 45)    # target 40 cm
+       def snap_structural(w):
+    # אם המדידה בין 25 ל-35 ס"מ -> זה קיר 30
+    if 25 <= w <= 35:
+        return 30
+    # אם המדידה בין 36 ל-48 ס"מ -> זה קיר 40
+    if 36 <= w <= 48:
+        return 40
+    return w
     else:
         _mamad_walls = _inner_walls = _outer_walls = []
 
@@ -2578,16 +2584,17 @@ if st.session_state.results is not None:
 
             # Detect new click
             if coords is not None:
-                prev = st.session_state.get("_ruler_prev")
-                if prev != coords:
-                    st.session_state["_ruler_prev"] = coords
-                    pts_new = list(st.session_state.get("ruler_pts", []))
-                    if len(pts_new) < 2:
-                        pts_new.append(coords)
-                    else:
-                        pts_new = [coords]  # restart measurement
-                    st.session_state["ruler_pts"] = pts_new
-                    st.rerun()   # redraw line immediately
+                if coords:
+    # 1. חישוב המיקום האמיתי ב-PDF (לפי היחס שהגדרנו)
+    real_x = coords['x'] / st.session_state["_ruler_display_ratio"]
+    real_y = coords['y'] / st.session_state["_ruler_display_ratio"]
+    
+    # 2. עדכון מרכז הממ"ד לנקודה שלחצת עליה
+    st.session_state["mamad_center"] = (real_x, real_y)
+    st.sidebar.success(f"📍 הממ''ד הוגדר במיקום: {int(real_x)}, {int(real_y)}")
+    
+    # 3. הרצה מחדש של הבדיקה על הנקודה הזו
+    st.rerun()
 
     with col_check:
         # ── Ruler result — always at the very top in a bright yellow box ──────
