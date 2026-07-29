@@ -5,3 +5,5 @@ pandas
 fpdf2
 numpy
 streamlit-image-coordinates
+python-bidi
+arabic-reshaper
