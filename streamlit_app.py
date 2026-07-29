@@ -1847,8 +1847,8 @@ def build_pdf_report(
 
     # ── Font paths ─────────────────────────────────────────────────────────────
     _FONTS  = Path(__file__).parent / "fonts"
-    HEEBO_R = str(_FONTS / "Heebo-Regular.ttf")
-    HEEBO_B = str(_FONTS / "Heebo-Bold.ttf")
+    HEEBO_R = str( "Heebo-Regular.ttf")
+    HEEBO_B = str( "Heebo-Bold.ttf")
 
     # ── Helpers ────────────────────────────────────────────────────────────────
     def _h(text: str) -> str:
