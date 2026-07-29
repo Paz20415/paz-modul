@@ -1043,14 +1043,6 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
                         ee.measure_mamad_walls(pdf_bytes, used_scale,
                                                mamad_bbox=_mamad_anchor)
                         if w >= 20]
-def snap_structural(w):
-    if 25 <= w <= 35:
-        return 30
-    if 36 <= w <= 48:
-        return 40
-    return w
-    else:
-        _mamad_walls = _inner_walls = _outer_walls = []
 
     # ── 1. Wall Thickness — Inner (תקנה 2.3א ≥ 30 cm) ───────────────────────
     # Single combined pattern is faster than 4 separate scans
