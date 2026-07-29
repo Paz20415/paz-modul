@@ -3,6 +3,14 @@ import pdfplumber
 from PIL import Image, ImageDraw
 import io
 import os
+
+# הגדרה חכמה של נתיב בסיס הנתונים שעובדת גם בענן
+current_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(current_dir, "users.db")
+
+def _get_conn():
+    # חיבור לבסיס הנתונים עם הרשאות מתאימות לענן
+    return sqlite3.connect(DB_PATH, check_same_thread=False)
 import re
 import math
 import hashlib
