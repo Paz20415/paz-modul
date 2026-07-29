@@ -1043,11 +1043,9 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
                         ee.measure_mamad_walls(pdf_bytes, used_scale,
                                                mamad_bbox=_mamad_anchor)
                         if w >= 20]
-       def snap_structural(w):
-    # אם המדידה בין 25 ל-35 ס"מ -> זה קיר 30
+def snap_structural(w):
     if 25 <= w <= 35:
         return 30
-    # אם המדידה בין 36 ל-48 ס"מ -> זה קיר 40
     if 36 <= w <= 48:
         return 40
     return w
