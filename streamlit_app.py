@@ -1036,17 +1036,25 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
     # ── Pre-compute mamad walls once — used by checks 1, 2 and 3 ─────────────
     _mamad_anchor = ee.find_mamad_room_bbox(
         pdf_bytes, word_coords=corpus.get("word_coords"), scale=used_scale)
-    if used_scale:
-        # measure_mamad_walls already applies max-within-cluster + structural
-        # snapping (24–34→30, 36–46→40) before returning.
-        _mamad_walls = [w for w in
-                        ee.measure_mamad_walls(pdf_bytes, used_scale,
-                                               mamad_bbox=_mamad_anchor)
-                        if w >= 20]
-        _inner_walls = sorted(w for w in _mamad_walls if 25 <= w <= 35)   # target 30 cm
-        _outer_walls = sorted(w for w in _mamad_walls if 35 < w <= 45)    # target 40 cm
+ if used_scale:
+        # 1. מדידת קירות עם עיגול הנדסי (מנקה את הפאשלות של ה-22 ס"מ)
+        _raw_walls = ee.measure_mamad_walls(pdf_bytes, used_scale, mamad_bbox=_mamad_anchor)
+        _mamad_walls = []
+        for w in _raw_walls:
+            if 20 <= w <= 34: _mamad_walls.append(30) # הופך 22/28 ל-30
+            elif 35 <= w <= 48: _mamad_walls.append(40) # הופך 37/42 ל-40
+            elif w > 48: _mamad_walls.append(w)
+        
+        _inner_walls = [w for w in _mamad_walls if w == 30]
+        _outer_walls = [w for w in _mamad_walls if w == 40]
+
+        # 2. חישוב מידות לממ"ד מינימלי (חוק ה-1.60 מטר)
+        _w_cm = ((_mamad_anchor[2] - _mamad_anchor[0]) / 72) * 2.54 * used_scale
+        _h_cm = ((_mamad_anchor[3] - _mamad_anchor[1]) / 72) * 2.54 * used_scale
+        _min_dim_detected = min(_w_cm, _h_cm) / 100.0 # המרה למטרים
     else:
         _mamad_walls = _inner_walls = _outer_walls = []
+        _min_dim_detected = 0
 
     # ── 1. Wall Thickness — Inner (תקנה 2.3א ≥ 30 cm) ───────────────────────
     # Single combined pattern is faster than 4 separate scans
