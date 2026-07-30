@@ -1048,11 +1048,18 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
         _inner_walls = [w for w in _mamad_walls if w == 30]
         _outer_walls = [w for w in _mamad_walls if w == 40]
 
-        # 2. חישוב מידות לממ"ד מינימלי (חוק ה-1.60 מטר)
-        _w_cm = ((_mamad_anchor[2] - _mamad_anchor[0]) / 72) * 2.54 * used_scale
-        _h_cm = ((_mamad_anchor[3] - _mamad_anchor[1]) / 72) * 2.54 * used_scale
-        _min_dim_detected = min(_w_cm, _h_cm) / 100.0 # המרה למטרים
-    else:
+       # 2. חישוב מידות לממ"ד מינימלי (חוק ה-1.60 מטר) - גרסה בטוחה למניעת KeyError
+        if isinstance(_mamad_anchor, dict):
+            _pts_w = _mamad_anchor.get('x1', 0) - _mamad_anchor.get('x0', 0)
+            _pts_h = _mamad_anchor.get('bottom', 0) - _mamad_anchor.get('top', 0)
+        else:
+            _pts_w = _mamad_anchor[2] - _mamad_anchor[0]
+            _pts_h = _mamad_anchor[3] - _mamad_anchor[1]
+
+        _w_cm = (_pts_w / 72) * 2.54 * used_scale
+        _h_cm = (_pts_h / 72) * 2.54 * used_scale
+        _min_dim_detected = min(_w_cm, _h_cm) / 100.0
+       else:
         _mamad_walls = _inner_walls = _outer_walls = []
         _min_dim_detected = 0
 
