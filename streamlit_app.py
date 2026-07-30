@@ -1033,11 +1033,12 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
 
     scale_info = {"used_scale": used_scale, "source": scale_src}
 
-    # ── Pre-compute mamad walls once — used by checks 1, 2 and 3 ─────────────
+# --- Pre-compute mamad walls once --- used by checks 1, 2 and 3 ---
     _mamad_anchor = ee.find_mamad_room_bbox(
         pdf_bytes, word_coords=corpus.get("word_coords"), scale=used_scale)
+
     if used_scale:
-        # 1. מדידת קירות עם עיגול הנדסי (Snapping)
+        # 1. מדידת קירות עם עיגול הנדסי (מנקה את הפאשלות של ה-22 ס"מ)
         _raw_walls = ee.measure_mamad_walls(pdf_bytes, used_scale, mamad_bbox=_mamad_anchor)
         _mamad_walls = []
         for w in _raw_walls:
@@ -1059,7 +1060,7 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
         _w_cm = (_pts_w / 72) * 2.54 * used_scale
         _h_cm = (_pts_h / 72) * 2.54 * used_scale
         _min_dim_detected = min(_w_cm, _h_cm) / 100.0
-     else:
+    else:
         _mamad_walls = _inner_walls = _outer_walls = []
         _min_dim_detected = 0
     # ── 1. Wall Thickness — Inner (תקנה 2.3א ≥ 30 cm) ───────────────────────
