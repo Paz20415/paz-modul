@@ -1037,18 +1037,18 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
     _mamad_anchor = ee.find_mamad_room_bbox(
         pdf_bytes, word_coords=corpus.get("word_coords"), scale=used_scale)
     if used_scale:
-        # 1. מדידת קירות עם עיגול הנדסי (מנקה את הפאשלות של ה-22 ס"מ)
+        # 1. מדידת קירות עם עיגול הנדסי (Snapping)
         _raw_walls = ee.measure_mamad_walls(pdf_bytes, used_scale, mamad_bbox=_mamad_anchor)
         _mamad_walls = []
         for w in _raw_walls:
-            if 20 <= w <= 34: _mamad_walls.append(30) # הופך 22/28 ל-30
-            elif 35 <= w <= 48: _mamad_walls.append(40) # הופך 37/42 ל-40
+            if 20 <= w <= 34: _mamad_walls.append(30)
+            elif 35 <= w <= 48: _mamad_walls.append(40)
             elif w > 48: _mamad_walls.append(w)
         
         _inner_walls = [w for w in _mamad_walls if w == 30]
         _outer_walls = [w for w in _mamad_walls if w == 40]
 
-       # 2. חישוב מידות לממ"ד מינימלי (חוק ה-1.60 מטר) - גרסה בטוחה למניעת KeyError
+        # 2. חישוב מידות לממ"ד מינימלי (חוק ה-1.60 מטר) - גרסה בטוחה
         if isinstance(_mamad_anchor, dict):
             _pts_w = _mamad_anchor.get('x1', 0) - _mamad_anchor.get('x0', 0)
             _pts_h = _mamad_anchor.get('bottom', 0) - _mamad_anchor.get('top', 0)
@@ -1059,10 +1059,9 @@ def run_checks(pdf_bytes: bytes, calibration_scale: int | None = None,
         _w_cm = (_pts_w / 72) * 2.54 * used_scale
         _h_cm = (_pts_h / 72) * 2.54 * used_scale
         _min_dim_detected = min(_w_cm, _h_cm) / 100.0
-       else:
+     else:
         _mamad_walls = _inner_walls = _outer_walls = []
         _min_dim_detected = 0
-
     # ── 1. Wall Thickness — Inner (תקנה 2.3א ≥ 30 cm) ───────────────────────
     # Single combined pattern is faster than 4 separate scans
     inner_pat = (
